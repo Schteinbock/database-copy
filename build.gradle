@@ -1,0 +1,54 @@
+plugins {
+	id 'java'
+	id 'eclipse'
+}
+
+repositories {
+	mavenCentral()
+}
+compileJava.options.encoding = 'UTF-8'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+
+test {
+	useJUnit()
+}
+
+dependencies {
+	implementation 'info.picocli:picocli:4.7.0'
+	implementation 'ch.qos.logback:logback-classic:1.3.14'
+	testImplementation 'junit:junit:4.13.2'
+	testImplementation 'com.h2database:h2:2.2.224'
+}
+
+jar {
+	manifest {
+		def classpath=['jdbc/jdbc1.jar','jdbc/jdbc2.jar']
+		classpath += sourceSets.main.runtimeClasspath.collect{'lib/'+it.getName()}
+		
+		attributes(
+			'Main-Class': 'de.us.dbcopy.DatabaseCopyCommand',
+			'Class-Path': classpath.join(' '),
+			)
+		}
+}
+
+tasks.register('createDatabaseCopyDistribution',Copy) {
+	doFirst {
+		mkdir 'tmp/dist/jdbc/'
+	}
+	from jar
+	from (sourceSets.main.runtimeClasspath) {
+		include '*.jar'
+		into 'lib'
+	}
+	into layout.buildDirectory.dir('tmp/dist/')
+}
+
+tasks.register('zipDatabaseCopyDistribution',Zip) {
+	from createDatabaseCopyDistribution
+}
